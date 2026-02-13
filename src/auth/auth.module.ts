@@ -13,7 +13,8 @@ import { UsersModule } from '../users/users.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
+      // eslint-disable-next-line @typescript-eslint/require-await
+      useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET') || 'secretKey',
         signOptions: { expiresIn: '1h' },
       }),
