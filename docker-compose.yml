@@ -1,5 +1,22 @@
 version: '3.8'
+
 services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=db 
+      - DB_PORT=5432
+      - DB_USERNAME=user
+      - DB_PASSWORD=password
+      - DB_DATABASE=ecommerce_db
+      - JWT_SECRET=secretKey
+    depends_on:
+      - db
+    networks:
+      - ecommerce-network
+
   db:
     image: postgres:15
     environment:
@@ -10,6 +27,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce-network
 
 volumes:
   postgres_data:
+
+networks:
+  ecommerce-network:
