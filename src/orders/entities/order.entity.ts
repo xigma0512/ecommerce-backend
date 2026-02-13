@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { OrderItem } from './order-item.entity';
@@ -20,6 +21,13 @@ export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'uuid' })
+  userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
   @Column('decimal')
   totalPrice: number;
 
@@ -32,9 +40,6 @@ export class Order {
 
   @CreateDateColumn()
   createdAt: Date;
-
-  @ManyToOne(() => User, (user) => user.orders)
-  user: User;
 
   @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
   items: OrderItem[];
