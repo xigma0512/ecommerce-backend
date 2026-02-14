@@ -97,12 +97,11 @@ await this.dataSource.transaction(async (manager: EntityManager) => {
 
 ### 方法一：使用 Docker (推薦)
 1. 確保已安裝 Docker 與 Docker Compose。
-2. 在根目錄執行：
+2. 建立 `.env` 檔案並參考 `.env.example` 設定資料庫連接。
+3. 在根目錄執行：
    ```bash
    docker-compose up --build
    ```
-3. API 將運行在 `http://localhost:3000`。
-4. Swagger 文件位於 `http://localhost:3000/api`。
 
 ### 方法二：手動執行
 1. 安裝依賴：
@@ -116,6 +115,9 @@ await this.dataSource.transaction(async (manager: EntityManager) => {
    npm run start:dev
    ```
 
+### 啟動完成
+- API 將運行在 `http://localhost:3000`。
+- Swagger 文件位於 `http://localhost:3000/api`。
 ---
 
 ## 📄 API 文件

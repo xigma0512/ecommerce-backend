@@ -5,28 +5,27 @@ services:
     build: .
     ports:
       - "3000:3000"
-    environment:
-      - DB_HOST=db 
-      - DB_PORT=5432
-      - DB_USERNAME=user
-      - DB_PASSWORD=password
-      - DB_DATABASE=ecommerce_db
-      - JWT_SECRET=secretKey
+    env_file: 
+      - .env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - ecommerce-network
 
   db:
     image: postgres:15
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: ecommerce_db
+    env_file:
+      - .env
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d ecommerce_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - ecommerce-network
 
