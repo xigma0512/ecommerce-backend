@@ -1,98 +1,123 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# NestJS 電商後端實作 (Ecommerce Backend)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+這是一個基於 **NestJS + TypeORM + PostgreSQL** 構建的簡易電商後端系統。本專案旨在展示對 NestJS 架構的理解、資料庫關聯設計，以及處理核心商業邏輯中資料一致性的能力。
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 核心亮點
 
-## Description
+- **資料庫交易 (Database Transaction)**：下單流程嚴格執行 ACID 事務，確保庫存扣減與訂單建立的一致性。
+- **高併發處理 (Concurrency Control)**：採用 **Pessimistic Write Lock (悲觀鎖)** 解決超賣問題，確保在高併發請求下庫存扣減的正確性。
+- **角色權限管理 (RBAC)**：透過 JWT 與 Custom Decorators 實現管理員 (Admin) 與一般顧客 (Customer) 的權限控管。
+- **自動化文件 (Swagger)**：完整整合 Swagger 介面，方便測試與開發。
+- **容器化 (Docker)**：提供 Docker Compose 配置文件，實現一鍵式環境部署。
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
+## 🛠 技術棧
 
-```bash
-$ npm install
+- **框架**: NestJS (v11)
+- **語言**: TypeScript
+- **資料庫**: PostgreSQL
+- **ORM**: TypeORM
+- **認證**: Passport-JWT
+- **文件**: Swagger UI
+- **部署**: Docker / Docker Compose
+
+---
+
+## 📊 資料庫設計 (Schema)
+
+系統包含四張核心資料表：
+
+1.  **User**: 使用者資訊，區分 `admin` 與 `customer` 角色。
+- `id`: UUID (Primary Key)
+- `email`: string (Unique)
+- `password`: string (Hashed)
+- `role`: enum ('admin', 'customer') — *用於權限控管*
+
+2.  **Product**: 商品資訊，包含價格與即時庫存。
+- `id`: UUID (Primary Key)
+- `title`: string
+- `price`: decimal/number
+- `stock`: integer — *庫存數量*
+
+3.  **Order**: 訂單主表，紀錄總金額與訂單狀態。
+- `id`: UUID (Primary Key)
+- `userId`: UUID (Foreign Key)
+- `totalPrice`: decimal — *訂單總金額*
+- `status`: enum ('pending', 'completed', 'cancelled')
+- `createdAt`: timestamp
+
+4.  **OrderItem**: 訂單明細，紀錄購買時的快照價格，避免商品調價影響歷史紀錄。
+- `id`: UUID (Primary Key)
+- `orderId`: UUID (Foreign Key)
+- `productId`: UUID (Foreign Key)
+- `price`: decimal — *購買時的單價*
+- `quantity`: integer
+    
+---
+
+## 🚦 API 端點說明
+
+### 1. 認證模組 (Auth)
+- `POST /auth/signup`: 註冊新帳號。
+- `POST /auth/login`: 登入並獲取 JWT Token。
+
+### 2. 商品模組 (Product)
+- `GET /products`: 列出所有商品 (公開 API)。
+- `POST /products`: 新增商品 (**僅限 Admin**)。
+
+### 3. 訂單模組 (Order)
+- `POST /orders`: 建立訂單 (**需驗證庫存、扣減庫存、交易保護**)。
+- `GET /orders/:id`: 查詢特定訂單詳情。
+
+---
+
+## 🧪 重點邏輯實現
+
+### 超賣問題與交易處理
+在 `OrdersService.create` 中，我們採用了以下策略：
+1.  **交易封裝**: 使用 `dataSource.transaction` 確保所有步驟（查庫存 -> 扣庫存 -> 建訂單）在同一事務中。
+2.  **悲觀鎖**: 查詢商品時使用 `pessimistic_write` 鎖定該行資料，防止其他事務在同一時間修改庫存。
+3.  **自動回滾**: 若庫存不足或任何步驟發生錯誤，事務會自動回滾，確保資料庫一致性。
+
+```typescript
+// 程式碼片段範例 (OrdersService)
+await this.dataSource.transaction(async (manager: EntityManager) => {
+  const product = await manager.findOne(Product, {
+    where: { id: productId },
+    lock: { mode: 'pessimistic_write' }, // 鎖定行
+  });
+  // ... 檢查與更新 ...
+});
 ```
 
-## Compile and run the project
+---
 
-```bash
-# development
-$ npm run start
+## 📦 如何執行
 
-# watch mode
-$ npm run start:dev
+### 方法一：使用 Docker (推薦)
+1. 確保已安裝 Docker 與 Docker Compose。
+2. 在根目錄執行：
+   ```bash
+   docker-compose up --build
+   ```
+3. API 將運行在 `http://localhost:3000`。
+4. Swagger 文件位於 `http://localhost:3000/api`。
 
-# production mode
-$ npm run start:prod
-```
+### 方法二：手動執行
+1. 安裝依賴：
+   ```bash
+   npm install
+   ```
+2. 建立 `.env` 檔案並參考 `.env.example` 設定資料庫連接。
+3. 啟動資料庫 (PostgreSQL)。
+4. 啟動應用：
+   ```bash
+   npm run start:dev
+   ```
 
-## Run tests
+---
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## 📄 API 文件
+啟動服務後，請訪問 `http://localhost:3000/api` 查看詳細的 Swagger API 文件。
+檔案中包含所有的 DTO 結構、參數要求與回傳格式。
