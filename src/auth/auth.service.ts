@@ -15,11 +15,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async signup(
-    email: string,
-    pass: string,
-    role: UserRole = UserRole.CUSTOMER,
-  ) {
+  async signup(email: string, pass: string) {
     const existingUser = await this.usersService.findOneByEmail(email);
     if (existingUser) {
       throw new BadRequestException('Email already exists');
@@ -30,7 +26,7 @@ export class AuthService {
     const user = await this.usersService.create({
       email,
       password: hashedPassword,
-      role,
+      role: UserRole.CUSTOMER,
     });
 
     const { password, ...result } = user;

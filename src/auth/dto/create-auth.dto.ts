@@ -14,8 +14,4 @@ export class CreateAuthDto {
   @IsString()
   @MinLength(6, { message: 'Password must be at least 6 characters' })
   password: string;
-
-  @IsOptional()
-  @IsEnum(UserRole, { message: 'Role must be either admin or customer' })
-  role?: UserRole;
 }
