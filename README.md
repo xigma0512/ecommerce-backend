@@ -60,6 +60,7 @@
 
 ### 1. 認證模組 (Auth)
 - `POST /auth/signup`: 註冊新帳號。
+    > 使用該 API 註冊的帳號權限均為 `customer`，需要手動至資料庫修改 `user.role` 欄位為 `admin` 才能獲取管理員帳號。
 - `POST /auth/login`: 登入並獲取 JWT Token。
 
 ### 2. 商品模組 (Product)
