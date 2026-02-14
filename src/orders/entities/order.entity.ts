@@ -5,7 +5,6 @@ import {
   CreateDateColumn,
   ManyToOne,
   OneToMany,
-  JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { OrderItem } from './order-item.entity';
