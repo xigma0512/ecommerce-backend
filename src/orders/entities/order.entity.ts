@@ -21,14 +21,7 @@ export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
-  userId: string;
-
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'userId' })
-  user: User;
-
-  @Column('decimal')
+  @Column('decimal', { precision: 10, scale: 2 })
   totalPrice: number;
 
   @Column({
@@ -40,6 +33,9 @@ export class Order {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @ManyToOne(() => User, (user: User) => user.orders, { onDelete: 'CASCADE' })
+  user: User;
 
   @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
   items: OrderItem[];

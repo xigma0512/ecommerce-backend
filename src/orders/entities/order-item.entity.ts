@@ -13,23 +13,17 @@ export class OrderItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
-  orderId: string;
-
-  @ManyToOne(() => Order)
-  @JoinColumn({ name: 'orderId' })
-  order: Order;
-
-  @Column({ type: 'uuid' })
-  productId: string;
-
-  @ManyToOne(() => Product)
-  @JoinColumn({ name: 'productId' })
-  product: Product;
-
-  @Column('decimal')
+  @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
   @Column('int')
   quantity: number;
+
+  @ManyToOne(() => Order, (order: Order) => order.items, {
+    onDelete: 'CASCADE',
+  })
+  order: Order;
+
+  @ManyToOne(() => Product, (product: Product) => product.orderItems)
+  product: Product;
 }

@@ -17,7 +17,7 @@ export class OrdersService {
   async create(user: User, createOrderDto: CreateOrderDto) {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       const order = new Order();
-      order.userId = user.id;
+      order.user = user;
       order.items = [];
       let totalAmount = 0;
 
@@ -43,7 +43,7 @@ export class OrdersService {
         await manager.update(Product, product.id, { stock: newStock });
 
         const orderItem = new OrderItem();
-        orderItem.productId = product.id;
+        orderItem.product = product;
         orderItem.price = product.price;
         orderItem.quantity = itemDto.quantity;
 
